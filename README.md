@@ -11,9 +11,10 @@
 - It will deploy your laravel app and create volumes on K8S
 
 ### This Repo contains:
+- Laravel version 12
 - K8s Deployment
 - Gitlab-ci pipeline
 - Nginx
-- PhpFpm
+- PhpFpm with php version 8.2
 - Cron in laravel deployment docker image
 - Volumes to store Db and Laravel Storage
