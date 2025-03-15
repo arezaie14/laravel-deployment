@@ -1,0 +1,63 @@
+stages:
+  - build-composer
+  - build
+  - deploy
+
+variables:
+  IMAGE_NAME: "$CI_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME"
+  IMAGE_TAG: "$CI_COMMIT_REF_NAME"
+  COMPOSER_IMAGE: "$IMAGE_NAME:composer"
+  COMPOSER_BUILD_IMAGE: "base"
+
+.build_template: &build_template
+  image:
+    name: docker:dind
+  services:
+    - name: docker:dind
+  before_script:
+    - echo "$CI_JOB_TOKEN" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - |
+      if docker manifest inspect "$COMPOSER_IMAGE" >/dev/null 2>&1; then
+        export COMPOSER_BUILD_IMAGE="$COMPOSER_IMAGE"
+      fi
+  only:
+    - dev
+    - main
+
+.deploy_template: &deploy_template
+  image:
+    name: bitnami/kubectl:latest
+  tags:
+    - laravel
+  script:
+    - kubectl config use-context laravel1/devops/k8s-configs:laravel
+    - kubectl apply -f ./deploy/kube.yml --namespace=$NAMESPACE
+    - kubectl set image deployment/laravel laravel-container="$IMAGE_NAME:$IMAGE_TAG" --namespace=$NAMESPACE
+
+build_composer:
+  stage: build-composer
+  extends: .build_template
+  script:
+    - docker build --pull --push --build-arg COMPOSER_IMAGE=${COMPOSER_BUILD_IMAGE} --target composer -t "$COMPOSER_IMAGE" -f ./deploy/Dockerfile .
+
+build:
+  stage: build
+  extends: .build_template
+  script:
+    - docker build --pull --push --build-arg COMPOSER_IMAGE=${COMPOSER_IMAGE} --target app -t $IMAGE_NAME:$IMAGE_TAG -f ./deploy/Dockerfile .
+
+deploy_dev:
+  stage: deploy
+  extends: .deploy_template
+  variables:
+    NAMESPACE: "dev"
+  only:
+    - dev
+
+deploy_prod:
+  stage: deploy
+  extends: .deploy_template
+  variables:
+    NAMESPACE: "prod"
+  only:
+    - main

@@ -1,0 +1,112 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  namespace: prod
+  name: laravel-db-pvc
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: 2G
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: laravel-pvc
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: 2G
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: laravel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: laravel
+  template:
+    metadata:
+      labels:
+        app: laravel
+    spec:
+      imagePullSecrets:
+        - name: gitlab-registry
+      containers:
+      - name: laravel-container
+        image: "placeholder:latest"
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+        envFrom:
+        - configMapRef:
+            name: laravel-env
+        - secretRef:
+            name: laravel-secrets
+        volumeMounts:
+          - mountPath: /usr/share/nginx/storage
+            name: laravel-pv
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "400m"
+
+      - name: laravel-db
+        image: "mysql:latest"
+        ports:
+        - containerPort: 3306
+        env:
+          - name: MYSQL_ROOT_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: laravel-secrets
+                key: DB_PASSWORD
+          - name: MYSQL_DATABASE
+            valueFrom:
+              secretKeyRef:
+                name: laravel-secrets
+                key: DB_DATABASE
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "400m"
+        volumeMounts:
+          - mountPath: /var/lib/mysql
+            name: laravel-db-pv
+
+      volumes:
+        - name: laravel-pv
+          persistentVolumeClaim:
+            claimName: laravel-pvc
+        - name: laravel-db-pv
+          persistentVolumeClaim:
+            claimName: laravel-db-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: laravel
+spec:
+  selector:
+    app: laravel
+  ports:
+    - protocol: TCP
+      name: "laravel"
+      port: 80
+      targetPort: 80
+    - protocol: TCP
+      name: "laravel-db"
+      port: 3306
+      targetPort: 3306
+  type: ClusterIP

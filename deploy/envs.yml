@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: laravel-env
+data:
+  APP_NAME: "laravel"
+  DB_HOST: "laravel"
+  DB_CONNECTION: "mysql"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: laravel-secrets
+type: Opaque
+data:
+  APP_KEY: APP_KEY_IN_BASE64_FORMAT
+  DB_USERNAME: MYSQLDB_USERNAME_IN_BASE64_FORMAT
+  DB_PASSWORD: MYSQLDB_PASSWORD_IN_BASE64_FORMAT
+  DB_DATABASE: MYSQLDB_DB_NAME_IN_BASE64_FORMAT
+
+
