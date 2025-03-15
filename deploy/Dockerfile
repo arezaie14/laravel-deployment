@@ -23,7 +23,6 @@ RUN apt-get update -y && apt-get install -y \
     php8.2-soap \
     php8.2-gmp
 
-COPY ./deploy/default.conf /etc/nginx/conf.d/default.conf
 
 RUN touch /var/log/cron.log
 RUN  chown -R nginx  /var/log/cron.log
@@ -34,14 +33,15 @@ RUN (crontab -l 2>/dev/null; echo "* * * * * /usr/bin/php /usr/share/nginx/artis
 USER root
 WORKDIR /usr/share/nginx
 
-COPY ./deploy/start.sh /start.sh
-
-RUN chmod +x /start.sh
-
 EXPOSE 80
 ENTRYPOINT ["/start.sh"]
 
 FROM ${COMPOSER_IMAGE} as composer
+
+COPY ./deploy/default.conf /etc/nginx/conf.d/default.conf
+COPY ./deploy/start.sh /start.sh
+RUN chmod +x /start.sh
+
 COPY ./composer.json .
 COPY ./composer.lock .
 RUN composer i --no-scripts
