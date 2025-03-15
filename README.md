@@ -8,4 +8,12 @@
 - Set your envs in config map such as database host, database connection and ...
 - Apply envs manifest in your cluster with this command: kubectl apply -f envs.yml
 - Just upload your project on gitlab after setting gitlab runner for project and K8S config done
-- It will deploy your laravel app on K8S
+- It will deploy your laravel app and create volumes on K8S
+
+### This Repo contains:
+- K8s Deployment
+- Gitlab-ci pipeline
+- Nginx
+- PhpFpm
+- Cron in laravel deployment docker image
+- Volumes to store Db and Laravel Storage
