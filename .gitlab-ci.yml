@@ -33,6 +33,7 @@ variables:
     - kubectl config use-context laravel1/devops/k8s-configs:laravel
     - kubectl apply -f ./deploy/kube.yml --namespace=$NAMESPACE
     - kubectl set image deployment/laravel laravel-container="$IMAGE_NAME:$IMAGE_TAG" --namespace=$NAMESPACE
+    - kubectl rollout restart deployment/aimand-core --namespace=$NAMESPACE
 
 build_composer:
   stage: build-composer
